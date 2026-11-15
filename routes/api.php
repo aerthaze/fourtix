@@ -1,6 +1,7 @@
 <?php
 
 
+
 use App\Http\Controllers\BookingController;
 
 use App\Http\Controllers\Api\VenueController;
@@ -24,7 +25,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/bookings/{booking}', [BookingController::class, 'show']);
     Route::patch('/bookings/{booking}/cancel', [BookingController::class, 'cancel']);
 
-    
     Route::get('/venues', [VenueController::class, 'index']);
     Route::post('/venues', [VenueController::class, 'store']);
     Route::get('/venues/{venue}', [VenueController::class, 'show']);
