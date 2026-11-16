@@ -17,6 +17,12 @@ class TicketResource extends JsonResource
             'quota' => $this->quota,
             'sold' => $this->sold,
             'remaining' => $this->remaining(),
+
+            'is_available' => $this->isAvailable(),
+            'status' => $this->markAsSoldOut()
+                ? 'sold_out'
+                : 'available',
+
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
