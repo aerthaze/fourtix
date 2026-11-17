@@ -1,6 +1,7 @@
 <?php
 namespace App\Contracts;
+use App\Models\Ticket;
 interface Reservable
 {
-    public function reserveSeat(int $quantity): bool;
+    public function reserveSeat(Ticket $ticket, int $quantity): bool;
 }
