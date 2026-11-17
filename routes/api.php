@@ -22,6 +22,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/venues/{venue}', [VenueController::class, 'show']);
     Route::put('/venues/{venue}', [VenueController::class, 'update']);
     Route::delete('/venues/{venue}', [VenueController::class, 'destroy']);
+    Route::apiResource('/tickets', TicketController::class);
 
     Route::get('/bookings', [BookingController::class, 'index']);
     Route::post('/bookings', [BookingController::class, 'store']);
