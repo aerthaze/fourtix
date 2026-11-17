@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\VenueController;
+use App\Http\Controllers\TicketController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
 use Illuminate\Http\Request;
