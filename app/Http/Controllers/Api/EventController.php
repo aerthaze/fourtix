@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use App\Http\Resources\EventResource;
+use Illuminate\Http\Request;
 
 class EventController extends Controller
 {
@@ -28,16 +29,17 @@ class EventController extends Controller
      */
     public function store(StoreEventRequest $request)
     {
-        // Memvalidasi data event yang dikirim
-        $validated = $request->validated(); // Mengambil data yang sudah divalidasi berdasarkan aturan di StoreEventRequest
+        $validated = $request->validated();
 
-        // Menyimpan data event ke database
-        $event = Event::create($validated); //Membuat data event baru berdasarkan data yang telah divalidasi, kemudian menyimpannya ke dalam tabel events di database
-        // Mengembalikan response JSON
-        return response()->json([ //Mengembalikan response JSON
-            'message' => 'Event berhasil ditambahkan', //menampilkan pesan bahwa event berhasil ditambahkan ke database
-            'data' => new EventResource($event) // Mengubah data event yang berhasil ditambahkan ke dalam format EventResource
-        ], 201); //menunjukkan permintaan berhasil diproses dan data berhasil ditambahkan ke database
+        $event = Event::create([
+            ...$validated,
+            'organizer_id' => $request->user()->id,
+        ]);
+
+        return response()->json([
+            'message' => 'Event berhasil ditambahkan',
+            'data' => new EventResource($event)
+        ], 201);
     }
 
     /**
@@ -68,30 +70,44 @@ class EventController extends Controller
     public function update(UpdateEventRequest $request, string $id)
     {
         // Mencari data event berdasarkan ID
-        $event = Event::find($id); //menggunakan metode find() untuk mencari data event berdasarkan ID yang diberikan. Jika data event ditemukan, maka akan disimpan dalam variabel $event, jika tidak ditemukan maka akan bernilai null
+        $event = Event::find($id);
 
         // Memeriksa apakah event ditemukan
-        if (!$event) { //memeriksa apakah data event ditemukan atau tidak. Jika tidak ditemukan, maka akan mengembalikan response JSON dengan status code 404 (Not Found) dan pesan bahwa event tidak ditemukan
-            return response()->json([ //mengembalikan response JSON dengan status code 404 (Not Found) dan pesan bahwa event tidak ditemukan
-                'message' => 'Event tidak ditemukan' //menampilkan pesan bahwa event tidak ditemukan di database
-            ], 404); //berarti data yang dicari tidak ditemukan di database, sehingga mengembalikan response JSON dengan status code 404 (Not Found) 
+        if (!$event) {
+            return response()->json([
+                'message' => 'Event tidak ditemukan'
+            ], 404);
+        }
+
+        // Mengambil data pengguna yang sedang login
+        $user = $request->user();
+
+        // Memeriksa kepemilikan event
+        if (
+            $user->role === 'organizer' &&
+            $event->organizer_id !== $user->id
+        ) {
+            return response()->json([
+                'message' => 'Anda hanya dapat mengubah event milik sendiri.'
+            ], 403);
         }
 
         // Memvalidasi data yang akan diubah
-        $validated = $request->validated(); // Mengambil data yang sudah divalidasi berdasarkan aturan di UpdateEventRequest
+        $validated = $request->validated();
 
         // Memperbarui data event
-        $event->update($validated); //Memperbarui data event yang sudah ditemukan menggunakan data baru yang telah divalidasi, kemudian menyimpan perubahan tersebut ke dalam tabel events di database
+        $event->update($validated);
+
         return response()->json([
             'message' => 'Event berhasil diperbarui',
-            'data' => new EventResource($event) // Mengubah data event yang berhasil diperbarui menjadi format EventResource
+            'data' => new EventResource($event)
         ], 200);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
         // Mencari data event berdasarkan ID
         $event = Event::find($id);
@@ -103,10 +119,22 @@ class EventController extends Controller
             ], 404);
         }
 
-        // Menghapus data event dari database
-        $event->delete(); //menghapus data event yg sebelumnya ditemukan dari tabel events di database
+        // Mengambil data pengguna yang sedang login
+        $user = $request->user();
 
-        // Mengembalikan response JSON
+        // Memeriksa kepemilikan event
+        if (
+            $user->role === 'organizer' &&
+            $event->organizer_id !== $user->id
+        ) {
+            return response()->json([
+                'message' => 'Anda hanya dapat menghapus event milik sendiri.'
+            ], 403);
+        }
+
+        // Menghapus data event dari database
+        $event->delete();
+
         return response()->json([
             'message' => 'Event berhasil dihapus'
         ], 200);
