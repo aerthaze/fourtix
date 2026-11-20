@@ -28,7 +28,7 @@ class ConcertEvent extends Event implements Reservable
             if (
                 !$ticketData ||
                 $ticketData->event_id != $this->id ||
-                ($ticketData->sold + $quantity) > $ticketData->quota
+                !$ticketData->isAvailable($quantity)
             ) {
                 return false;
             }
