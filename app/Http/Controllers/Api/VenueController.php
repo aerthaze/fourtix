@@ -8,18 +8,31 @@ use App\Http\Requests\UpdateVenueRequest;
 use App\Http\Resources\VenueResource;
 use App\Models\Venue;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class VenueController extends Controller
 {
     // GET: /api/venues
-    public function index()
+    public function index(Request $request)
     {
-        return VenueResource::collection(Venue::latest()->paginate(10));
+        $this->authorize('viewAny', Venue::class);
+
+        $venues = Venue::query();
+
+        if ($request->boolean('with_trashed') && $request->user()->role === 'admin') {
+            $venues = Venue::withTrashed();
+        }
+
+        return VenueResource::collection(
+            $venues->latest()->paginate(10)
+        );
     }
 
     // POST: /api/venues
     public function store(StoreVenueRequest $request): JsonResponse
     {
+        $this->authorize('create', Venue::class);
+
         $venue = Venue::create($request->validated());
 
         return (new VenueResource($venue))
@@ -30,12 +43,16 @@ class VenueController extends Controller
     // GET: /api/venues/{venue}
     public function show(Venue $venue): VenueResource
     {
+        $this->authorize('view', $venue);
+
         return new VenueResource($venue);
     }
 
     // PUT: /api/venues/{venue}
     public function update(UpdateVenueRequest $request, Venue $venue): VenueResource
     {
+        $this->authorize('update', $venue);
+        
         $venue->update($request->validated());
 
         return new VenueResource($venue);
