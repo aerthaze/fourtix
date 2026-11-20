@@ -53,7 +53,7 @@ class Ticket extends Model
     public function validateQuota(int $newQuota): bool
     {
         return $newQuota >= $this->sold
-            && $newQuota > 0;
+            && $newQuota >= 0;
     }
 
     // Memeriksa apakah label tiket belum digunakan
