@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Venue extends Model
@@ -14,4 +15,9 @@ class Venue extends Model
         'address',
         'city',
     ];
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(Event::class);
+    }
 }

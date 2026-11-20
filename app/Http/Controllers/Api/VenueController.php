@@ -48,7 +48,7 @@ class VenueController extends Controller
         return new VenueResource($venue);
     }
 
-    // PUT: /api/venues/{venue}
+    // PATCH: /api/venues/{venue}
     public function update(UpdateVenueRequest $request, Venue $venue): VenueResource
     {
         $this->authorize('update', $venue);
@@ -61,6 +61,18 @@ class VenueController extends Controller
     // DELETE: /api/venues/{venue}
     public function destroy(Venue $venue): JsonResponse
     {
+        $this->authorize('delete', $venue);
+
+        $hasActiveEvents = $venue->events()
+            ->where('event_date', '>=', now())
+            ->exists();
+
+        if ($hasActiveEvents) {
+            return response()->json([
+                'message' => 'Venue tidak dapat dihapus karena masih memiliki event aktif.',
+            ], 409);
+        }
+
         $venue->delete();
 
         return response()->json(['message' => 'Venue deleted successfully']);
