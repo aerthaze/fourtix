@@ -22,6 +22,10 @@ class AuthController extends Controller
             'password' => $validated['password'],
         ]);
 
+        // Semua akun yang mendaftar otomatis menjadi customer
+        $user->role = 'customer';
+        $user->save();
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
