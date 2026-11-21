@@ -26,12 +26,13 @@ class StoreTicketRequest extends FormRequest
                 'string',
                 'max:255',
                 Rule::unique('tickets', 'label')
-                    ->where('event_id', $this->event_id),
+                    ->where('event_id', $this->event_id)
+                    ->whereNull('deleted_at'),
             ],
 
             'price' => 'required|numeric|min:0',
 
-            'quota' => 'required|integer|min:1',
+            'quota' => 'required|integer|min:0',
         ];
     }
 }
