@@ -18,12 +18,21 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
     
-    Route::apiResource('events', EventController::class);
+    // Semua role yang sudah login boleh melihat event
+    Route::get('/events', [EventController::class, 'index']);
+    Route::get('/events/{id}', [EventController::class, 'show']);
+
+    // Hanya Admin dan Organizer yang boleh mengelola event
+    Route::middleware('role:admin,organizer')->group(function () {
+        Route::post('/events', [EventController::class, 'store']);
+        Route::patch('/events/{id}', [EventController::class, 'update']);
+        Route::delete('/events/{id}', [EventController::class, 'destroy']);
+    });
     
     Route::get('/venues', [VenueController::class, 'index']);
     Route::post('/venues', [VenueController::class, 'store']);
     Route::get('/venues/{venue}', [VenueController::class, 'show']);
-    Route::put('/venues/{venue}', [VenueController::class, 'update']);
+    Route::patch('/venues/{venue}', [VenueController::class, 'update']);
     Route::delete('/venues/{venue}', [VenueController::class, 'destroy']);
     Route::apiResource('/tickets', TicketController::class);
 

@@ -3,11 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Ticket extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'event_id',
         'label',
@@ -36,24 +39,24 @@ class Ticket extends Model
         return $this->hasMany(Booking::class);
     }
 
-    //Menghitung sisa tiket
+    // Menghitung sisa tiket
     public function remaining(): int
     {
         return max(0, $this->quota - $this->sold);
     }
 
-    //Memeriksa ketersediaan tiket
+    // Memeriksa ketersediaan tiket
     public function isAvailable(int $quantity = 1): bool
     {
         return $quantity > 0
             && $this->remaining() >= $quantity;
     }
 
-    //Memeriksa apakah kuota baru valid
+    // Memeriksa apakah kuota baru valid
     public function validateQuota(int $newQuota): bool
     {
         return $newQuota >= $this->sold
-            && $newQuota > 0;
+            && $newQuota >= 0;
     }
 
     // Memeriksa apakah label tiket belum digunakan
@@ -77,12 +80,6 @@ class Ticket extends Model
         $this->price = $newPrice;
 
         return $this->save();
-    }
-
-    // Memeriksa apakah tiket boleh dihapus
-    public function canBeDeleted(): bool
-    {
-        return !$this->bookings()->exists();
     }
 
     // Memeriksa apakah tiket sudah habis

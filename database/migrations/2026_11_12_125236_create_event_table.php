@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('events', function (Blueprint $table) { // Membuat tabel events
             $table->id(); //membuat kolom id sebagai primary key
-            $table->foreignId('venue_id')->constrained()->cascadeOnDelete(); //membuat kolom venue_id sebagai foreign key yang mengacu pada kolom id di tabel venues. Jika data di tabel venues dihapus, maka data event yang terhubung dengan tabel venues juga akan dihapus (cascade on delete)
+            $table->foreignId('venue_id')->constrained()->restrictOnDelete();
             $table->string('title'); //menyimpan title acara (event)
             $table->enum('type', ['cinema', 'concert']); //menyimpan jenis acara (event) yang hanya bisa diisi dengan 'cinema' atau 'concert'
             $table->dateTime('event_date'); //menyimpan tanggal dan waktu acara berlangsung

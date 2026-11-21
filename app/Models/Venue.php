@@ -3,13 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Venue extends Model
 {
-    protected $fillable = ['name', 'address', 'city'];
+    use SoftDeletes;
 
-    // Satu venue punya banyak event
-    public function events()
+    protected $fillable = [
+        'name',
+        'address',
+        'city',
+    ];
+
+    public function events(): HasMany
     {
         return $this->hasMany(Event::class);
     }

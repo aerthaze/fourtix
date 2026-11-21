@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Event extends Model
 {
@@ -26,4 +28,17 @@ class Event extends Model
     {
         return $this->belongsTo(Venue::class); // Setiap Event memiliki satu Venue
     }
+
+    public function tickets(): HasMany //satu event dapat memiliki banyak tiket. Dengan relasi ini, kita dapat mengakses semua tiket yang terkait dengan event tertentu melalui properti tickets pada objek Event.
+    {
+        return $this->hasMany(Ticket::class); //mengembalikan relasi hasMany antara Event dan Ticket, yang menunjukkan bahwa satu event dapat memiliki banyak tiket.
+    }
+
+    // Menghubungkan Event dengan User sebagai Organizer
+    public function organizer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'organizer_id');
+    }
 }
+
+
