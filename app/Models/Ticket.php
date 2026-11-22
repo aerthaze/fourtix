@@ -30,7 +30,7 @@ class Ticket extends Model
     // Relasi Ticket dengan Event
     public function event(): BelongsTo
     {
-        return $this->belongsTo(Event::class);
+        return $this->belongsTo(Event::class)->withTrashed();
     }
 
     // Relasi Ticket dengan Booking
