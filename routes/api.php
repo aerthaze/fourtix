@@ -27,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/events', [EventController::class, 'store']);
         Route::patch('/events/{id}', [EventController::class, 'update']);
         Route::delete('/events/{id}', [EventController::class, 'destroy']);
+        Route::patch('/events/{id}/restore', [EventController::class, 'restore']);
     });
     
     Route::get('/venues', [VenueController::class, 'index']);
