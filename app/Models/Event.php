@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Event extends Model
 {
+    use SoftDeletes; //digunakan untuk mengaktifkan fitur soft delete pada model Event. Dengan menggunakan trait ini, ketika sebuah event dihapus, data event tersebut tidak akan dihapus secara permanen dari database, melainkan hanya ditandai sebagai "dihapus" dengan mengisi kolom deleted_at. Hal ini memungkinkan kita untuk memulihkan data event yang telah dihapus jika diperlukan.
     protected $fillable = [ //digunakan untuk menentukan kolom mana saja yang boleh diisi secara massal (mass assignment) saat membuat atau memperbarui data Event. Ini membantu mencegah serangan mass assignment.
         'venue_id',
         'title',
@@ -32,6 +35,13 @@ class Event extends Model
     {
         return $this->hasMany(Ticket::class); //mengembalikan relasi hasMany antara Event dan Ticket, yang menunjukkan bahwa satu event dapat memiliki banyak tiket.
     }
+
+    // Menghubungkan Event dengan User sebagai Organizer
+    public function organizer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'organizer_id');
+    }
+    
 }
 
 
