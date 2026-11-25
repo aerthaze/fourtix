@@ -27,50 +27,44 @@ class Ticket extends Model
         ];
     }
 
-    // Relasi Ticket dengan Event
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class)->withTrashed();
     }
 
-    // Relasi Ticket dengan Booking
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
     }
 
-    // Menghitung sisa tiket
     public function remaining(): int
     {
         return max(0, $this->quota - $this->sold);
     }
 
-    // Memeriksa ketersediaan tiket
     public function isAvailable(int $quantity = 1): bool
     {
         return $quantity > 0
             && $this->remaining() >= $quantity;
     }
 
-    // Memeriksa apakah kuota baru valid
     public function validateQuota(int $newQuota): bool
     {
-        return $newQuota >= $this->sold
-            && $newQuota >= 0;
+        return $newQuota >= 0
+            && $newQuota >= $this->sold;
     }
 
-    // Memeriksa apakah label tiket belum digunakan
     public function validateLabel(string $label): bool
     {
         return !self::where('event_id', $this->event_id)
             ->where('label', $label)
+            ->whereNull('deleted_at')
             ->when($this->exists, function ($query) {
                 $query->where('id', '!=', $this->id);
             })
             ->exists();
     }
 
-    // Memperbarui harga tiket
     public function updatePrice(float $newPrice): bool
     {
         if ($newPrice < 0) {
@@ -82,7 +76,6 @@ class Ticket extends Model
         return $this->save();
     }
 
-    // Memeriksa apakah tiket sudah habis
     public function markAsSoldOut(): bool
     {
         return $this->remaining() <= 0;
