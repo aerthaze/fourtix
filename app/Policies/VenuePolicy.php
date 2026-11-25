@@ -18,6 +18,10 @@ class VenuePolicy
 
     public function view(User $user, Venue $venue): bool
     {
+        if ($venue->trashed()) {
+            return $user->role === 'admin';
+        }
+
         return in_array($user->role, [
             'admin',
             'organizer',
