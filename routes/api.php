@@ -8,8 +8,8 @@ use App\Http\Controllers\Api\EventController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -17,7 +17,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
-    
+
     // Semua role yang sudah login boleh melihat event
     Route::get('/events', [EventController::class, 'index']);
     Route::get('/events/{id}', [EventController::class, 'show']);
@@ -29,7 +29,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/events/{id}', [EventController::class, 'destroy']);
         Route::patch('/events/{id}/restore', [EventController::class, 'restore']);
     });
-    
+
     Route::get('/venues', [VenueController::class, 'index']);
     Route::post('/venues', [VenueController::class, 'store']);
     Route::get('/venues/{venue}', [VenueController::class, 'show']);

@@ -14,13 +14,19 @@ class AdminOrganizerSeeder extends Seeder
             [
                 'name' => env('ADMIN_NAME'),
                 'email' => env('ADMIN_EMAIL'),
-                'password' => env('ADMIN_PASSWORD'),
+                'password' => env('SEED_ADMIN_PASSWORD'),
                 'role' => 'admin',
             ],
             [
-                'name' => env('ORGANIZER_NAME'),
-                'email' => env('ORGANIZER_EMAIL'),
-                'password' => env('ORGANIZER_PASSWORD'),
+                'name' => env('ORGANIZER_A_NAME'),
+                'email' => env('ORGANIZER_A_EMAIL'),
+                'password' => env('SEED_ORGANIZER_PASSWORD'),
+                'role' => 'organizer',
+            ],
+            [
+                'name' => env('ORGANIZER_B_NAME'),
+                'email' => env('ORGANIZER_B_EMAIL'),
+                'password' => env('SEED_ORGANIZER_PASSWORD'),
                 'role' => 'organizer',
             ],
         ];
@@ -33,7 +39,7 @@ class AdminOrganizerSeeder extends Seeder
             ) {
                 throw new RuntimeException(
                     'Konfigurasi akun ' . $account['role'] .
-                    ' belum lengkap di file .env'
+                        ' belum lengkap di file .env'
                 );
             }
 
