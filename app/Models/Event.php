@@ -12,6 +12,7 @@ class Event extends Model
     use SoftDeletes; //digunakan untuk mengaktifkan fitur soft delete pada model Event. Dengan menggunakan trait ini, ketika sebuah event dihapus, data event tersebut tidak akan dihapus secara permanen dari database, melainkan hanya ditandai sebagai "dihapus" dengan mengisi kolom deleted_at. Hal ini memungkinkan kita untuk memulihkan data event yang telah dihapus jika diperlukan.
     protected $fillable = [ //digunakan untuk menentukan kolom mana saja yang boleh diisi secara massal (mass assignment) saat membuat atau memperbarui data Event. Ini membantu mencegah serangan mass assignment.
         'venue_id',
+        'organizer_id',
         'title',
         'type',
         'event_date',

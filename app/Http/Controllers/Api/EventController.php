@@ -11,189 +11,170 @@ use App\Http\Requests\UpdateEventRequest;
 use App\Http\Resources\EventResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class EventController extends Controller
 {
-
     public function index()
     {
-        $events = Event::all(); // Mengambil semua data event dari database
+        Gate::authorize('viewAny', Event::class); // Memeriksa apakah pengguna boleh melihat daftar event melalui EventPolicy
 
-        return response()->json([ // Mengembalikan response JSON dengan status code 200 (OK)
+        $events = Event::all(); // Mengambil semua data event yang belum dihapus dari database
+
+        return response()->json([ // Mengembalikan response dalam format JSON
             'message' => 'Daftar event berhasil diambil',
-            'data' => EventResource::collection($events) // Mengubah semua data event menjadi format Resource sebelum dikirim dalam response JSON
-        ], 200); //menunjukkan permintaan berhasil diproses dan data berhasil diambil dari database
+            'data' => EventResource::collection($events) // Mengubah kumpulan data event menjadi format EventResource
+        ], 200); // Mengirim status HTTP 200 yang menandakan permintaan berhasil
     }
 
     public function store(StoreEventRequest $request)
     {
-        $validated = $request->validated();
+        Gate::authorize('create', Event::class); // Memeriksa apakah pengguna memiliki hak untuk membuat event
 
-        $event = Event::create([
-            ...$validated,
-            'organizer_id' => $request->user()->id,
+        $validated = $request->validated(); // Mengambil data yang sudah lolos validasi StoreEventRequest
+
+        if (
+            $request->user()->role === 'organizer' && // Memeriksa apakah pengguna yang sedang login merupakan organizer
+            !in_array($validated['type'], ['cinema', 'concert']) // Memastikan jenis event yang dibuat hanya cinema atau concert
+        ) {
+            return response()->json([
+                'message' => 'Organizer hanya dapat membuat event cinema atau concert.'
+            ], 403); // Menolak pembuatan event jika jenisnya tidak diperbolehkan
+        }
+
+        $event = Event::create([ // Membuat data event baru ke dalam database
+            ...$validated, // Memasukkan seluruh data yang sudah divalidasi
+            'organizer_id' => $request->user()->id, // Menyimpan ID pengguna yang membuat event sebagai pemilik event
         ]);
 
-        return response()->json([
+        return response()->json([ // Mengembalikan informasi event yang berhasil dibuat
             'message' => 'Event berhasil ditambahkan',
-            'data' => new EventResource($event)
-        ], 201);
+            'data' => new EventResource($event) // Mengubah data event menjadi format EventResource
+        ], 201); // Mengirim status HTTP 201 yang menandakan data berhasil dibuat
     }
 
     public function show(string $id)
     {
-        // Mencari data event berdasarkan ID
-        $event = Event::find($id); //digunakan untuk mencari satu data event berdasarkan ID yang diberikan. Jika data event ditemukan, maka akan disimpan dalam variabel $event, jika tidak ditemukan maka akan bernilai null
+        $event = Event::find($id); // Mencari event berdasarkan ID yang diberikan
 
-        // Memeriksa apakah event ditemukan
-        if (!$event) { //memeriksa apakah data event ditemukan atau tidak. Jika tidak ditemukan, maka akan mengembalikan response JSON dengan status code 404 (Not Found) dan pesan bahwa event tidak ditemukan
+        if (!$event) { // Memeriksa apakah event tidak ditemukan
             return response()->json([
                 'message' => 'Event tidak ditemukan'
-            ], 404); //berarti data yang dicari tidak ditemukan di database, sehingga mengembalikan response JSON dengan status code 404 (Not Found)
+            ], 404); // Mengirim status HTTP 404 jika event tidak ditemukan
         }
 
-        // Mengembalikan detail event dalam bentuk JSON
-        return response()->json([
+        Gate::authorize('view', $event); // Memeriksa apakah pengguna boleh melihat detail event melalui EventPolicy
+
+        return response()->json([ // Mengembalikan detail event dalam format JSON
             'message' => 'Detail event berhasil diambil',
-            'data' => new EventResource($event) // Mengubah data event yang ditemukan menjadi format EventResource sebelum dikirim dalam response JSON
-        ], 200);
+            'data' => new EventResource($event) // Mengubah data event menjadi format EventResource
+        ], 200); // Mengirim status HTTP 200 yang menandakan permintaan berhasil
     }
 
     public function update(UpdateEventRequest $request, string $id)
-    { 
-        $event = Event::find($id); // Mencari data event berdasarkan ID
- 
-        if (!$event) { // Memeriksa apakah event ditemukan
+    {
+        $event = Event::find($id); // Mencari event berdasarkan ID yang akan diperbarui
+
+        if (!$event) { // Memeriksa apakah event tidak ditemukan
             return response()->json([
                 'message' => 'Event tidak ditemukan'
-            ], 404);
+            ], 404); // Mengirim status HTTP 404 jika event tidak ditemukan
         }
 
-        $user = $request->user(); // Mengambil data pengguna yang sedang login
+        Gate::authorize('update', $event); // Memeriksa hak pengguna untuk mengubah event melalui EventPolicy
 
-        if ( // Memeriksa kepemilikan event
-            $user->role === 'organizer' &&
-            $event->organizer_id !== $user->id
-        ) {
-            return response()->json([
-                'message' => 'Anda hanya dapat mengubah event milik sendiri.'
-            ], 403);
-        }
+        $validated = $request->validated(); // Mengambil data perubahan yang sudah lolos validasi
 
-        $validated = $request->validated(); // Memvalidasi data yang akan diubah
+        $event->update($validated); // Memperbarui data event berdasarkan data yang sudah divalidasi
 
-        $event->update($validated); // Memperbarui data event
-
-        return response()->json([
+        return response()->json([ // Mengembalikan informasi event setelah diperbarui
             'message' => 'Event berhasil diperbarui',
-            'data' => new EventResource($event)
-        ], 200);
+            'data' => new EventResource($event) // Mengubah data event terbaru menjadi format EventResource
+        ], 200); // Mengirim status HTTP 200 yang menandakan data berhasil diperbarui
     }
 
-    public function destroy(Request $request, string $id)
+    public function destroy(string $id)
     {
-        $event = Event::find($id);
+        $event = Event::find($id); // Mencari event yang akan dihapus berdasarkan ID
 
-        if (!$event) {
+        if (!$event) { // Memeriksa apakah event tidak ditemukan
             return response()->json([
                 'message' => 'Event tidak ditemukan'
-            ], 404);
+            ], 404); // Mengirim status HTTP 404 jika event tidak ditemukan
         }
 
-        $user = $request->user();
+        Gate::authorize('delete', $event); // Memeriksa hak pengguna untuk menghapus event melalui EventPolicy
 
-        if (
-            $user->role === 'organizer' &&
-            $event->organizer_id !== $user->id
-        ) {
-            return response()->json([
-                'message' => 'Anda hanya dapat menghapus event milik sendiri.'
-            ], 403);
-        }
+        $hasPendingBooking = DB::transaction(function () use ($event) { // Menjalankan proses penghapusan dalam transaksi database
 
-        $hasPendingBooking = DB::transaction(function () use ($event) {
-            $tickets = Ticket::withTrashed()
-                ->where('event_id', $event->id)
-                ->lockForUpdate()
-                ->get();
+            $tickets = Ticket::withTrashed() // Mengambil seluruh tiket termasuk tiket yang sudah di-soft delete
+                ->where('event_id', $event->id) // Memilih tiket yang berhubungan dengan event tersebut
+                ->lockForUpdate() // Mengunci baris tiket agar tidak diubah transaksi lain selama proses berlangsung
+                ->get(); // Mengambil seluruh data tiket yang sesuai
 
-            $ticketIds = $tickets->pluck('id');
+            $ticketIds = $tickets->pluck('id'); // Mengambil seluruh ID tiket untuk memeriksa booking yang terkait
 
-            $hasPendingBooking = Booking::whereIn('ticket_id', $ticketIds)
-                ->where('status', 'pending')
-                ->exists();
+            $hasPendingBooking = Booking::whereIn('ticket_id', $ticketIds) // Mencari booking berdasarkan ID tiket milik event
+                ->where('status', 'pending') // Memilih booking yang masih berstatus pending
+                ->exists(); // Memeriksa apakah terdapat minimal satu booking pending
 
-            if ($hasPendingBooking) {
-                return true;
+            if ($hasPendingBooking) { // Memeriksa apakah event masih memiliki booking pending
+                return true; // Menghentikan proses penghapusan dan memberi tanda bahwa masih ada booking pending
             }
 
-            $event->delete();
+            $event->delete(); // Melakukan soft delete pada event dengan mengisi kolom deleted_at
 
-            $tickets->each(function ($ticket) {
-                if (!$ticket->trashed()) {
-                    $ticket->delete();
-                }
-            });
+            $event->tickets()->delete(); // Melakukan soft delete pada seluruh tiket event yang belum terhapus
 
-            return false;
+            return false; // Menandakan proses penghapusan berhasil dilakukan
         });
 
-        if ($hasPendingBooking) {
+        if ($hasPendingBooking) { // Memeriksa hasil transaksi apakah ditemukan booking pending
             return response()->json([
                 'message' => 'Event tidak dapat dihapus karena masih memiliki booking pending.'
-            ], 422);
+            ], 409); // Mengirim status HTTP 409 Conflict karena penghapusan bertentangan dengan kondisi booking
         }
 
-        return response()->json([
+        return response()->json([ // Mengembalikan informasi bahwa event berhasil dihapus
             'message' => 'Event dan tiket terkait berhasil dihapus'
-        ], 200);
+        ], 200); // Mengirim status HTTP 200 yang menandakan proses berhasil
     }
 
-    public function restore(Request $request, string $id)
+    public function restore(string $id)
     {
-        $event = Event::withTrashed()->find($id);
+        $event = Event::withTrashed()->find($id); // Mencari event berdasarkan ID termasuk event yang sudah di-soft delete
 
-        if (!$event) {
+        if (!$event) { // Memeriksa apakah event tidak ditemukan
             return response()->json([
                 'message' => 'Event tidak ditemukan'
-            ], 404);
+            ], 404); // Mengirim status HTTP 404 jika event tidak ditemukan
         }
 
-        if (!$event->trashed()) {
+        if (!$event->trashed()) { // Memeriksa apakah event sebenarnya tidak dalam kondisi terhapus
             return response()->json([
                 'message' => 'Event tidak dalam kondisi terhapus'
-            ], 422);
+            ], 422); // Mengirim status HTTP 422 jika event tidak perlu dipulihkan
         }
 
-        $user = $request->user();
+        Gate::authorize('restore', $event); // Memeriksa hak pengguna untuk memulihkan event melalui EventPolicy
 
-        if (
-            $user->role === 'organizer' &&
-            $event->organizer_id !== $user->id
-        ) {
-            return response()->json([
-                'message' => 'Anda hanya dapat memulihkan event milik sendiri.'
-            ], 403);
-        }
+        DB::transaction(function () use ($event) { // Menjalankan proses pemulihan dalam transaksi database
 
-        DB::transaction(function () use ($event) {
-            $tickets = Ticket::withTrashed()
-                ->where('event_id', $event->id)
-                ->lockForUpdate()
-                ->get();
+            $tickets = Ticket::withTrashed() // Mengambil seluruh tiket termasuk yang sudah di-soft delete
+                ->where('event_id', $event->id) // Memilih tiket yang berhubungan dengan event tersebut
+                ->lockForUpdate() // Mengunci baris tiket selama proses pemulihan berlangsung
+                ->get(); // Mengambil seluruh data tiket yang sesuai
 
-            $event->restore();
+            $event->restore(); // Memulihkan event dengan mengosongkan kolom deleted_at
 
-            $tickets->each(function ($ticket) {
-                if ($ticket->trashed()) {
-                    $ticket->restore();
-                }
-            });
+            $event->tickets()->withTrashed()->restore(); // Memulihkan seluruh tiket terkait yang sebelumnya di-soft delete
         });
 
-        return response()->json([
+        $event->refresh(); // Memuat ulang data event setelah proses pemulihan selesai
+
+        return response()->json([ // Mengembalikan informasi event yang berhasil dipulihkan
             'message' => 'Event dan tiket terkait berhasil dipulihkan',
-            'data' => new EventResource($event)
-        ], 200);
+            'data' => new EventResource($event) // Mengubah data event yang sudah dipulihkan menjadi format EventResource
+        ], 200); // Mengirim status HTTP 200 yang menandakan proses berhasil
     }
 }
