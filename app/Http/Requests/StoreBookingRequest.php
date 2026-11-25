@@ -15,7 +15,7 @@ class StoreBookingRequest extends FormRequest
     {
         return [
             'ticket_id' => ['required', 'integer', 'exists:tickets,id'],
-            'quantity'  => ['required', 'integer', 'min:1', 'max:10'],
+            'quantity'  => ['required', 'integer', 'min:1', 'max:10'], //batas per request jadi maksimal 10
         ];
     }
 }

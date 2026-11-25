@@ -10,8 +10,10 @@ class Booking extends Model
 {
     use GeneratesBookingCode;
 
-    public const STATUS_CONFIRMED = 'confirmed';
+    public const STATUS_PENDING   = 'pending';
+    public const STATUS_PAID      = 'paid';
     public const STATUS_CANCELLED = 'cancelled';
+    public const STATUS_EXPIRED   = 'expired';
 
     protected $fillable = [
         'user_id',
@@ -20,6 +22,8 @@ class Booking extends Model
         'total_price',
         'status',
         'booking_code',
+        'expires_at',
+        'idempotency_key',
     ];
 
     protected function casts(): array
@@ -27,6 +31,7 @@ class Booking extends Model
         return [
             'quantity'    => 'integer',
             'total_price' => 'decimal:2',
+            'expires_at'  => 'datetime',
         ];
     }
 
@@ -42,13 +47,37 @@ class Booking extends Model
         return $this->belongsTo(User::class);
     }
 
+    // withTrashed: riwayat booking tetap tampil walau ticket sudah di-soft-delete
     public function ticket(): BelongsTo
     {
-        return $this->belongsTo(Ticket::class);
+        return $this->belongsTo(Ticket::class)->withTrashed();
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === self::STATUS_PENDING;
+    }
+
+    public function isPaid(): bool
+    {
+        return $this->status === self::STATUS_PAID;
     }
 
     public function isCancelled(): bool
     {
         return $this->status === self::STATUS_CANCELLED;
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->status === self::STATUS_EXPIRED;
+    }
+
+    // Pending dan sudah lewat batas waktu bayar
+    public function hasExpired(): bool
+    {
+        return $this->isPending()
+            && $this->expires_at !== null
+            && $this->expires_at->isPast();
     }
 }
