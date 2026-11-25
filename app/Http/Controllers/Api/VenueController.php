@@ -63,11 +63,7 @@ class VenueController extends Controller
     {
         $this->authorize('delete', $venue);
 
-        $hasActiveEvents = $venue->events()
-            ->where('event_date', '>=', now())
-            ->exists();
-
-        if ($hasActiveEvents) {
+        if ($venue->events()->exists()) {
             return response()->json([
                 'message' => 'Venue tidak dapat dihapus karena masih memiliki event aktif.',
             ], 409);

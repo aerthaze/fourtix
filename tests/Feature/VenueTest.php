@@ -38,6 +38,7 @@ class VenueTest extends TestCase
             $table->id();
             $table->foreignId('venue_id')->constrained()->restrictOnDelete();
             $table->dateTime('event_date');
+            $table->softDeletes();
             $table->timestamps();
         });
     }
@@ -124,7 +125,12 @@ class VenueTest extends TestCase
         $this->actingAs($admin)
             ->getJson('/api/venues?with_trashed=1')
             ->assertOk()
-            ->assertJsonFragment(['name' => 'Venue Terhapus']);
+            ->assertJsonFragment(['name' => 'Venue Terhapus'])
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => ['id', 'name', 'address', 'city', 'deleted_at'],
+                ],
+            ]);
     }
 
     public function test_venue_with_active_event_cannot_be_soft_deleted(): void
@@ -159,9 +165,10 @@ class VenueTest extends TestCase
             'city' => 'Jakarta',
         ]);
 
-        $venue->events()->create([
+        $event = $venue->events()->create([
             'event_date' => now()->subDay(),
         ]);
+        $event->delete();
 
         $this->actingAs($admin)
             ->deleteJson("/api/venues/{$venue->id}")

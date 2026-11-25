@@ -15,10 +15,11 @@ class VenueResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'      => $this->id,
-            'name'    => $this->name,
-            'address' => $this->address,
-            'city'    => $this->city,
+            'id'         => $this->id,
+            'name'       => $this->name,
+            'address'    => $this->address,
+            'city'       => $this->city,
+            'deleted_at' => $this->deleted_at,
         ];
     }
 }
