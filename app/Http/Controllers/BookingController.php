@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBookingRequest;
 use App\Http\Resources\BookingResource;
 use App\Models\Booking;
@@ -16,7 +15,9 @@ use Illuminate\Support\Facades\Gate;
 
 class BookingController extends Controller
 {
-    public function __construct(private readonly BookingService $bookingService) {}
+    public function __construct(private readonly BookingService $bookingService)
+    {
+    }
 
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -24,8 +25,8 @@ class BookingController extends Controller
         $query = Booking::with('ticket.event')->latest();
 
         if ($user->role === 'organizer') {
-            // hanya booking event miliknya, termasuk event/ticket yang sudah dihapus.
-            // Pakai DB::table supaya tetap jalan 
+            // Hanya booking event miliknya, termasuk event/ticket yang sudah dihapus.
+            // Pakai DB::table supaya tetap jalan walau Event belum/sudah memakai SoftDeletes.
             $eventIds  = DB::table('events')->where('organizer_id', $user->id)->select('id');
             $ticketIds = Ticket::withTrashed()->whereIn('event_id', $eventIds)->select('id');
 
@@ -39,18 +40,10 @@ class BookingController extends Controller
 
     public function store(StoreBookingRequest $request): JsonResponse
     {
-        $key = $request->header('Idempotency-Key') ?? $request->input('idempotency_key');
-
-        if (! filled($key)) {
-            return response()->json([
-                'message' => 'Header Idempotency-Key wajib diisi.',
-            ], 422);
-        }
-
         [$booking, $created] = $this->bookingService->create(
             $request->user(),
             $request->validated(),
-            (string) $key,
+            $request->validated('idempotency_key'),
         );
 
         return (new BookingResource($booking))
