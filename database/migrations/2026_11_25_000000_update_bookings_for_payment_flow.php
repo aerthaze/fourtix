@@ -10,8 +10,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('bookings', function (Blueprint $table) {
-            $table->timestamp('expires_at')->nullable()->after('booking_code');
-            $table->string('idempotency_key', 100)->nullable()->after('expires_at');
+            $table->dateTime('expires_at')->nullable()->after('booking_code');
+            $table->dateTime('paid_at')->nullable()->after('expires_at');
+            $table->dateTime('cancelled_at')->nullable()->after('paid_at');
+            $table->string('idempotency_key', 100)->nullable()->after('cancelled_at');
             $table->string('status', 20)->default('pending')->change();
         });
 
@@ -43,7 +45,7 @@ return new class extends Migration
         Schema::table('bookings', function (Blueprint $table) {
             $table->dropUnique(['user_id', 'idempotency_key']);
             $table->dropIndex(['status', 'expires_at']);
-            $table->dropColumn(['expires_at', 'idempotency_key']);
+            $table->dropColumn(['expires_at', 'paid_at', 'cancelled_at', 'idempotency_key']);
             $table->string('status', 20)->default('confirmed')->change();
         });
 
