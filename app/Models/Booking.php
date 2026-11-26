@@ -23,6 +23,8 @@ class Booking extends Model
         'status',
         'booking_code',
         'expires_at',
+        'paid_at',
+        'cancelled_at',
         'idempotency_key',
     ];
 
@@ -31,7 +33,9 @@ class Booking extends Model
         return [
             'quantity'    => 'integer',
             'total_price' => 'decimal:2',
-            'expires_at'  => 'datetime',
+            'expires_at'   => 'datetime',
+            'paid_at'      => 'datetime',
+            'cancelled_at' => 'datetime',
         ];
     }
 
