@@ -20,7 +20,6 @@ class BookingService
     // 1. BUAT BOOKING
     // Urutan lock: ticket -> user
     // Return: [booking, true jika baru dibuat / false jika request ulang]
-
     public function create(User $user, array $data, string $key): array
     {
         // Key yang sama sudah pernah dipakai? Kembalikan booking lama.
@@ -35,7 +34,7 @@ class BookingService
         } catch (UniqueConstraintViolationException $e) {
             // Dua request dengan key sama masuk bersamaan.
             // Yang kalah mengambil booking milik yang menang.
-            //  ditangkap DI LUAR transaction
+            // Ditangkap DI LUAR transaction.
             $old = $this->findByKey($user, $key);
 
             if (! $old) {
@@ -84,7 +83,6 @@ class BookingService
 
     // 2. BAYAR (simulasi): pending -> paid
     // Urutan lock: booking -> ticket
-
     public function pay(Booking $booking): Booking
     {
         $expired = false;
@@ -103,7 +101,10 @@ class BookingService
                 return; // commit dulu, error dilempar setelah transaction
             }
 
-            $booking->update(['status' => Booking::STATUS_PAID]);
+            $booking->update([
+                'status'  => Booking::STATUS_PAID,
+                'paid_at' => now(), // <-- ditambah
+            ]);
         });
 
         if ($expired) {
@@ -115,7 +116,6 @@ class BookingService
 
     // 3. BATALKAN: utk booking pending
     // Urutan lock: booking -> ticket
-
     public function cancel(Booking $booking): Booking
     {
         $expired = false;
@@ -139,7 +139,10 @@ class BookingService
             }
 
             $this->returnQuota($booking);
-            $booking->update(['status' => Booking::STATUS_CANCELLED]);
+            $booking->update([
+                'status'       => Booking::STATUS_CANCELLED,
+                'cancelled_at' => now(), // <-- ditambah
+            ]);
         });
 
         if ($expired) {
@@ -149,9 +152,8 @@ class BookingService
         return $booking->fresh()->load('ticket.event');
     }
 
-    // 4. EXPIRE: 
+    // 4. EXPIRE:
     // Return true jika benar-benar di-expire
-
     public function expireBooking(int $bookingId): bool
     {
         return DB::transaction(function () use ($bookingId) {
