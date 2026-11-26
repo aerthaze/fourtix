@@ -1,33 +1,40 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Migrations\Migration; // Menggunakan fitur migration Laravel
+use Illuminate\Support\Facades\DB; // Menggunakan DB untuk menjalankan query
 
 return new class extends Migration
 {
-    public function up(): void
+    public function up(): void // Fungsi yang dijalankan saat migration
     {
-        $organizer = DB::table('users')
-            ->where('role', 'organizer')
-            ->orderBy('id')
-            ->first();
+        $hasUnassignedEvents = DB::table('events') // Mengakses tabel events
+            ->whereNull('organizer_id') // Mencari Event yang belum punya Organizer
+            ->exists(); // Mengecek apakah datanya ada
 
-        if (!$organizer) {
-            throw new RuntimeException(
-                'Akun Organizer belum tersedia. Jalankan AdminOrganizerSeeder terlebih dahulu.'
+        if (!$hasUnassignedEvents) { // Jika tidak ada Event yang perlu diisi
+            return; // Lewati proses migration
+        }
+
+        $organizer = DB::table('users') // Mengakses tabel users
+            ->where('role', 'organizer') // Mencari pengguna dengan role organizer
+            ->orderBy('id') // Mengurutkan berdasarkan ID terkecil
+            ->first(); // Mengambil Organizer pertama
+
+        if (!$organizer) { // Jika akun Organizer tidak ditemukan
+            throw new RuntimeException( // Menghentikan migration dengan pesan error
+                'Akun Organizer belum tersedia untuk mengisi Event lama.'
             );
         }
 
-        DB::table('events')
-            ->whereNull('organizer_id')
-            ->update([
-                'organizer_id' => $organizer->id,
+        DB::table('events') // Mengakses tabel events
+            ->whereNull('organizer_id') // Memilih Event yang belum punya Organizer
+            ->update([ // Memperbarui data Event
+                'organizer_id' => $organizer->id, // Mengisi ID Organizer
             ]);
     }
 
-    public function down(): void
+    public function down(): void // Fungsi saat migration di-rollback
     {
-        // Tidak mengosongkan organizer_id karena dapat menghapus
-        // kepemilikan event yang sudah ditetapkan setelah backfill.
+        // Tidak mengosongkan organizer_id agar kepemilikan Event tidak hilang
     }
 };
