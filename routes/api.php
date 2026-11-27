@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Controllers\Api\VenueController;
+use App\Http\Controllers\VenueController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
-use App\Http\Controllers\Api\EventController;
+use App\Http\Controllers\EventController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
