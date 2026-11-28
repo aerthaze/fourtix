@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\DB;
 
 class TicketController extends Controller
 {
-    // Menampilkan semua tiket
     public function index()
     {
         $tickets = Ticket::with('event')->get();
@@ -20,26 +19,22 @@ class TicketController extends Controller
         return TicketResource::collection($tickets);
     }
 
-    // Menambahkan tiket
     public function store(StoreTicketRequest $request)
     {
         $data = $request->validated();
 
         $event = Event::findOrFail($data['event_id']);
 
-        // Memeriksa hak akses pengelolaan event
         $this->authorizeEventManagement($request, $event);
 
         $ticket = new Ticket($data);
 
-        // Memeriksa kuota
         if (!$ticket->validateQuota($data['quota'])) {
             return response()->json([
                 'message' => 'Kuota tiket tidak valid.'
             ], 422);
         }
 
-        // Memeriksa label duplikat
         if (!$ticket->validateLabel($data['label'])) {
             return response()->json([
                 'message' => 'Label tiket sudah digunakan pada event ini.'
@@ -53,33 +48,27 @@ class TicketController extends Controller
             ->setStatusCode(201);
     }
 
-    // Menampilkan detail tiket
     public function show(Ticket $ticket)
     {
         return new TicketResource($ticket->load('event'));
     }
 
-    // Memperbarui tiket
     public function update(UpdateTicketRequest $request, Ticket $ticket)
     {
         $data = $request->validated();
 
         return DB::transaction(function () use ($data, $ticket, $request) {
-
-            // Mengunci data tiket selama proses pembaruan
             $lockedTicket = Ticket::where('id', $ticket->id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
             $lockedTicket->load('event');
 
-            // Memeriksa kepemilikan event saat ini
             $this->authorizeEventManagement(
                 $request,
                 $lockedTicket->event
             );
 
-            // Memeriksa kepemilikan event tujuan jika event_id diubah
             if (isset($data['event_id'])) {
                 $targetEvent = Event::findOrFail($data['event_id']);
 
@@ -89,10 +78,8 @@ class TicketController extends Controller
                 );
             }
 
-            // Menerapkan perubahan sementara
             $lockedTicket->fill($data);
 
-            // Memeriksa kuota baru
             if (
                 isset($data['quota']) &&
                 !$lockedTicket->validateQuota($data['quota'])
@@ -102,7 +89,6 @@ class TicketController extends Controller
                 ], 422);
             }
 
-            // Memeriksa label duplikat
             if (
                 isset($data['label']) &&
                 !$lockedTicket->validateLabel($data['label'])
@@ -112,19 +98,16 @@ class TicketController extends Controller
                 ], 422);
             }
 
-            // Menyimpan perubahan
             $lockedTicket->save();
 
             return new TicketResource($lockedTicket->load('event'));
         });
     }
 
-    // Menghapus tiket menggunakan Soft Delete
     public function destroy(Request $request, Ticket $ticket)
     {
         $ticket->load('event');
 
-        // Memeriksa kepemilikan event
         $this->authorizeEventManagement(
             $request,
             $ticket->event
@@ -137,7 +120,6 @@ class TicketController extends Controller
         ]);
     }
 
-    // Memeriksa hak akses admin dan organizer
     private function authorizeEventManagement(Request $request, Event $event)
     {
         $user = $request->user();
@@ -152,5 +134,27 @@ class TicketController extends Controller
             403,
             'Anda tidak memiliki izin untuk mengelola tiket event ini.'
         );
+    }
+
+    public function restore($id)
+    {
+        $ticket = Ticket::withTrashed()
+            ->with('event')
+            ->findOrFail($id);
+
+        $this->authorize('restore', $ticket);
+
+        if (!$ticket->validateLabel($ticket->label)) {
+            return response()->json([
+                'message' => 'Tiket tidak dapat dipulihkan karena label sudah digunakan pada event ini.'
+            ], 422);
+        }
+
+        $ticket->restore();
+
+        return response()->json([
+            'message' => 'Ticket berhasil dipulihkan.',
+            'data' => new TicketResource($ticket->fresh()->load('event'))
+        ]);
     }
 }
