@@ -52,4 +52,13 @@ class TicketPolicy
                 && (int) $ticket->event?->organizer_id === (int) $user->id
             );
     }
+
+    public function restore(User $user, Ticket $ticket): bool
+    {
+        return $user->role === 'admin'
+            || (
+                $user->role === 'organizer'
+                && (int) $ticket->event?->organizer_id === (int) $user->id
+            );
+    }
 }

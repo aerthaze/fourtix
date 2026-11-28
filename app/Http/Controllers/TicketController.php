@@ -25,7 +25,8 @@ class TicketController extends Controller
         $data = $request->validated();
 
         $event = Event::findOrFail($data['event_id']);
-        $this->authorize('create', [Ticket::class, $event]);
+
+        $this->authorizeEventManagement($request, $event);
 
         $ticket = new Ticket($data);
         $ticket->sold = 0;
@@ -60,20 +61,25 @@ class TicketController extends Controller
     {
         $data = $request->validated();
 
-        return DB::transaction(function () use ($data, $ticket) {
-            $lockedTicket = Ticket::whereKey($ticket->id)
+        return DB::transaction(function () use ($data, $ticket, $request) {
+            $lockedTicket = Ticket::where('id', $ticket->id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
             $lockedTicket->load('event');
 
-            $this->authorize('update', $lockedTicket);
+            $this->authorizeEventManagement(
+                $request,
+                $lockedTicket->event
+            );
 
             if (isset($data['event_id'])) {
                 $targetEvent = Event::findOrFail($data['event_id']);
 
                 $this->authorize('create', [Ticket::class, $targetEvent]);
             }
+
+            $lockedTicket->fill($data);
 
             if (
                 isset($data['quota']) &&
@@ -83,8 +89,6 @@ class TicketController extends Controller
                     'message' => 'Kuota tidak boleh lebih kecil dari jumlah tiket terjual.'
                 ], 422);
             }
-
-            $lockedTicket->fill($data);
 
             if (
                 isset($data['label']) &&
@@ -101,16 +105,57 @@ class TicketController extends Controller
         });
     }
 
-    public function destroy(Ticket $ticket)
+    public function destroy(Request $request, Ticket $ticket)
     {
         $ticket->load('event');
 
-        $this->authorize('delete', $ticket);
+        $this->authorizeEventManagement(
+            $request,
+            $ticket->event
+        );
 
         $ticket->delete();
 
         return response()->json([
             'message' => 'Ticket berhasil dihapus.'
+        ]);
+    }
+
+    private function authorizeEventManagement(Request $request, Event $event)
+    {
+        $user = $request->user();
+
+        $isAdmin = $user->role === 'admin';
+
+        $isOwner = $user->role === 'organizer'
+            && (int) $event->organizer_id === (int) $user->id;
+
+        abort_unless(
+            $isAdmin || $isOwner,
+            403,
+            'Anda tidak memiliki izin untuk mengelola tiket event ini.'
+        );
+    }
+
+    public function restore($id)
+    {
+        $ticket = Ticket::withTrashed()
+            ->with('event')
+            ->findOrFail($id);
+
+        $this->authorize('restore', $ticket);
+
+        if (!$ticket->validateLabel($ticket->label)) {
+            return response()->json([
+                'message' => 'Tiket tidak dapat dipulihkan karena label sudah digunakan pada event ini.'
+            ], 422);
+        }
+
+        $ticket->restore();
+
+        return response()->json([
+            'message' => 'Ticket berhasil dipulihkan.',
+            'data' => new TicketResource($ticket->fresh()->load('event'))
         ]);
     }
 }

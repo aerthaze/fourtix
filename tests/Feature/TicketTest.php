@@ -82,4 +82,26 @@ class TicketTest extends TestCase
         $this->assertFalse($policy->update($customer, $ticket));
         $this->assertFalse($policy->delete($customer, $ticket));
     }
+
+    public function test_admin_can_restore_ticket(): void
+    {
+        $admin = new User();
+        $admin->role = 'admin';
+
+        $ticket = new Ticket();
+        $policy = new TicketPolicy();
+
+        $this->assertTrue($policy->restore($admin, $ticket));
+    }
+
+    public function test_customer_cannot_restore_ticket(): void
+    {
+        $customer = new User();
+        $customer->role = 'customer';
+
+        $ticket = new Ticket();
+        $policy = new TicketPolicy();
+
+        $this->assertFalse($policy->restore($customer, $ticket));
+    }
 }
