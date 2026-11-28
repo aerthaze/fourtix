@@ -1,9 +1,7 @@
 <?php
 
 return [
-    // batas waktu pembayaran booking (menit)
-    'payment_ttl_minutes' => (int) env('PAYMENT_TTL_MINUTES', 30),
+    'payment_ttl_minutes' => (int) env('FOURTIX_PAYMENT_TTL_MINUTES', 15),
 
-    // maksimal tiket per event untuk satu akun (booking pending + paid)
-    'max_tickets_per_event' => (int) env('MAX_TICKETS_PER_EVENT', 4),
+    'max_tickets_per_event' => (int) env('FOURTIX_MAX_TICKETS_PER_EVENT', 4),
 ];
