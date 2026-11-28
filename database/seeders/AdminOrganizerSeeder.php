@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use RuntimeException;
 
 class AdminOrganizerSeeder extends Seeder
 {
@@ -12,37 +11,38 @@ class AdminOrganizerSeeder extends Seeder
     {
         $accounts = [
             [
-                'name' => env('ADMIN_NAME'),
-                'email' => env('ADMIN_EMAIL'),
-                'password' => env('SEED_ADMIN_PASSWORD'),
+                'name' => 'Farras',
+                'email' => 'admin@fourtix.id',
+                'password' => 'password123',
                 'role' => 'admin',
             ],
             [
-                'name' => env('ORGANIZER_A_NAME'),
-                'email' => env('ORGANIZER_A_EMAIL'),
-                'password' => env('SEED_ORGANIZER_PASSWORD'),
+                'name' => 'Nabila EO',
+                'email' => 'nabila@fourtix.id',
+                'password' => 'password123',
                 'role' => 'organizer',
             ],
             [
-                'name' => env('ORGANIZER_B_NAME'),
-                'email' => env('ORGANIZER_B_EMAIL'),
-                'password' => env('SEED_ORGANIZER_PASSWORD'),
+                'name' => 'Novi EO',
+                'email' => 'novi@fourtix.id',
+                'password' => 'password123',
                 'role' => 'organizer',
+            ],
+            [
+                'name' => 'Nova Amelia',
+                'email' => 'nova@test.com',
+                'password' => 'password123',
+                'role' => 'customer',
+            ],
+            [
+                'name' => 'Marcello',
+                'email' => 'marcello@test.com',
+                'password' => 'password123',
+                'role' => 'customer',
             ],
         ];
 
         foreach ($accounts as $account) {
-            if (
-                empty($account['name']) ||
-                empty($account['email']) ||
-                empty($account['password'])
-            ) {
-                throw new RuntimeException(
-                    'Konfigurasi akun ' . $account['role'] .
-                        ' belum lengkap di file .env'
-                );
-            }
-
             $user = User::firstOrNew([
                 'email' => $account['email'],
             ]);

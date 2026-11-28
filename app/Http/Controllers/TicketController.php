@@ -7,13 +7,14 @@ use App\Models\Event;
 use App\Http\Requests\StoreTicketRequest;
 use App\Http\Requests\UpdateTicketRequest;
 use App\Http\Resources\TicketResource;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class TicketController extends Controller
 {
     public function index()
     {
+        $this->authorize('viewAny', Ticket::class);
+
         $tickets = Ticket::with('event')->get();
 
         return TicketResource::collection($tickets);
@@ -28,6 +29,7 @@ class TicketController extends Controller
         $this->authorizeEventManagement($request, $event);
 
         $ticket = new Ticket($data);
+        $ticket->sold = 0;
 
         if (!$ticket->validateQuota($data['quota'])) {
             return response()->json([
@@ -50,6 +52,8 @@ class TicketController extends Controller
 
     public function show(Ticket $ticket)
     {
+        $this->authorize('view', $ticket);
+
         return new TicketResource($ticket->load('event'));
     }
 
@@ -72,17 +76,14 @@ class TicketController extends Controller
             if (isset($data['event_id'])) {
                 $targetEvent = Event::findOrFail($data['event_id']);
 
-                $this->authorizeEventManagement(
-                    $request,
-                    $targetEvent
-                );
+                $this->authorize('create', [Ticket::class, $targetEvent]);
             }
 
             $lockedTicket->fill($data);
 
             if (
                 isset($data['quota']) &&
-                !$lockedTicket->validateQuota($data['quota'])
+                !$lockedTicket->validateQuota((int) $data['quota'])
             ) {
                 return response()->json([
                     'message' => 'Kuota tidak boleh lebih kecil dari jumlah tiket terjual.'

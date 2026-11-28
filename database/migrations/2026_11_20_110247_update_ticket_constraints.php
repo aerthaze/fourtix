@@ -9,7 +9,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Mengganti cascadeOnDelete menjadi restrictOnDelete
         Schema::table('tickets', function (Blueprint $table) {
             $table->dropForeign(['event_id']);
 
@@ -19,7 +18,6 @@ return new class extends Migration
                 ->restrictOnDelete();
         });
 
-        // Menambahkan constraint kuota tiket
         DB::statement("
             ALTER TABLE tickets
             ADD CONSTRAINT tickets_quota_check
@@ -41,7 +39,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Menghapus constraint kuota
         DB::statement("
             ALTER TABLE tickets
             DROP CHECK tickets_quota_check
@@ -57,7 +54,6 @@ return new class extends Migration
             DROP CHECK tickets_sold_quota_check
         ");
 
-        // Mengembalikan foreign key menjadi cascadeOnDelete
         Schema::table('tickets', function (Blueprint $table) {
             $table->dropForeign(['event_id']);
 

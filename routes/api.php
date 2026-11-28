@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Controllers\Api\VenueController;
+use App\Http\Controllers\VenueController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
-use App\Http\Controllers\Api\EventController;
+use App\Http\Controllers\EventController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -41,5 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/bookings', [BookingController::class, 'index']);
     Route::post('/bookings', [BookingController::class, 'store']);
     Route::get('/bookings/{booking}', [BookingController::class, 'show']);
-    Route::patch('/bookings/{booking}/cancel', [BookingController::class, 'cancel']);
+    Route::post('/bookings/{booking}/pay', [BookingController::class, 'pay']);
+    Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel']);
+
 });
